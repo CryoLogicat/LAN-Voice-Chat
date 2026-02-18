@@ -1,134 +1,157 @@
-# 局域网语音联机（MVP）
+# LAN Voice Chat（局域网语音聊天）
 
-这是一个最小可用的局域网语音聊天程序，包含：
-- `server.py`：房间中继服务器
-- `client.py`：命令行语音客户端
-- `windows_app.py`：Windows 图形化一体端（可开服 + 可入房）
-- `android-client/`：Android 原生客户端工程（Android Studio）
+一个面向局域网场景的语音聊天项目，包含：
+- Python 中继服务端
+- Python 命令行客户端
+- Windows 图形化一体端（可开服 + 可入房）
+- Android 原生客户端工程（Kotlin）
 
-## 1. 环境要求
+项目目标是做一个可快速部署、低门槛上手的局域网语音 MVP。
 
-- Windows / macOS / Linux
+## 功能概览
+
+- 房间模式：同房间内互通语音，不同房间隔离
+- 低延迟音频链路：10ms 帧，适合局域网实时通话
+- Windows 一体端：同一个界面可启动服务端并加入房间
+- Android 客户端：可直接接入同一服务端房间
+
+## 项目结构
+
+```text
+.
+├─ server.py               # TCP 房间中继服务端
+├─ client.py               # 命令行语音客户端
+├─ windows_app.py          # Windows GUI 一体端（服务端 + 客户端）
+├─ common.py               # 协议与基础收发工具
+├─ build_windows.ps1       # Windows 单文件 EXE 打包脚本
+├─ requirements.txt
+└─ android-client/         # Android Studio 工程
+```
+
+## 运行环境
+
+### Python 端（服务端 / CLI 客户端 / Windows GUI）
+
 - Python 3.10+
-- 可用麦克风和扬声器
+- 可用麦克风与扬声器
+- 建议在同一局域网内测试
 
-## 2. 安装依赖
-
-在项目目录执行：
+安装依赖：
 
 ```bash
 pip install -r requirements.txt
 ```
 
-> 如果 `sounddevice` 安装失败，Windows 上可先升级 pip：
-> `python -m pip install --upgrade pip`
+如 `sounddevice` 安装失败，可先升级 pip：
 
-## 3. 启动服务端
+```bash
+python -m pip install --upgrade pip
+```
 
-在一台局域网可访问的机器上运行：
+### Android 端
+
+- Android Studio（建议最新稳定版）
+- 项目配置：`minSdk 26`，`targetSdk 35`
+- 运行时需授予麦克风权限（`RECORD_AUDIO`）
+
+## 快速开始（Python 服务端 + 客户端）
+
+### 1) 启动服务端
+
+在局域网可访问机器上运行：
 
 ```bash
 python server.py --host 0.0.0.0 --port 50000
 ```
 
-## 4. 启动客户端
+### 2) 启动客户端
 
-每个成员在自己的机器运行（把 `192.168.1.100` 换成服务端局域网 IP）：
+在其他设备运行（替换为服务端局域网 IP）：
 
 ```bash
 python client.py --host 192.168.1.100 --port 50000 --room room1 --name 张三
 ```
 
-- `--room`：房间名，相同房间可以互通语音
-- `--name`：昵称，不填则使用主机名
+参数说明：
+- `--host`：服务端地址（必填）
+- `--port`：服务端端口（默认 `50000`）
+- `--room`：房间名（必填）
+- `--name`：昵称（可选，默认主机名）
 
-## 5. 客户端命令
-
-连接后可输入：
-- `/mute`：静音麦克风（只听不说）
+客户端内置命令：
+- `/mute`：静音麦克风
 - `/unmute`：取消静音
 - `/quit`：退出
 
-## 6. Windows 图形化 APP
+## Windows 图形化一体端
 
-运行桌面版：
+直接运行：
 
 ```bash
 python windows_app.py
 ```
 
-这个界面里可同时做两件事：
-- 启动/停止本机服务端（上半区）
-- 作为客户端连接房间语音（下半区）
+界面支持：
+- 上半区启动/停止本机服务端
+- 下半区作为客户端加入房间
+- 一键静音 / 取消静音
 
-打包为 exe：
+## 打包 Windows EXE
+
+执行：
 
 ```powershell
 ./build_windows.ps1
 ```
 
 说明：
-- 打包脚本已固定使用 `uv`（不会调用 `pip`）。
-- 若本地没有 `.venv`，脚本会自动执行 `uv venv .venv`。
-- 请确保已安装 `uv` 并在 PATH 中可用。
+- 打包脚本固定使用 `uv`
+- 若没有 `.venv` 会自动创建
+- 产物：`dist/LanVoiceChatWindows.exe`
 
-打包结果：`dist/LanVoiceChatWindows.exe`
+## Android 客户端使用
 
-`LanVoiceChatWindows.exe` 为单文件一体端：同一个 exe 内置服务端与客户端能力。
+1. 用 Android Studio 打开 `android-client` 目录
+2. 等待 Gradle 同步
+3. 运行到真机（建议与服务端在同一局域网）
+4. 填写服务端 IP、端口、房间、昵称并连接
 
-## 7. Android APP（原生工程）
+## 协议与音频参数
 
-目录：`android-client/`
+- 传输协议：TCP 自定义包头（`type + payload_size`）
+- 消息类型：`JOIN / AUDIO / LEAVE / SYS`
+- 音频格式：`16kHz / Mono / 16-bit PCM`
+- 帧长：`10ms`
 
-使用方法：
-1. 用 Android Studio 打开 `android-client` 目录。
-2. 等待 Gradle 同步完成。
-3. 连接真机（建议同一局域网），运行 App。
-4. 在 App 里填服务端 IP（例如 `192.168.1.100`）、端口 `50000`、房间和昵称后连接。
+## 当前限制（MVP）
 
-注意：
-- 需要授予麦克风权限。
-- 手机和服务端必须在同一局域网，且服务端端口已放行。
+- 暂未实现鉴权与端到端加密
+- 暂未实现回声消除（AEC）和噪声抑制
+- 网络抖动较大时会出现丢帧或断续
 
-## 8. 说明
+## 常见问题
 
-- 传输格式：16kHz / 单声道 / 16-bit PCM
-- 当前实现是服务端中继转发，适合局域网内低延迟语音（10ms 帧）
-- 这是 MVP 版本，未做加密、鉴权、AEC（回声消除）等高级能力
+### 听不到声音
 
-## 9. 常见问题
+- 检查系统默认输入/输出设备
+- 检查服务端机器防火墙端口是否放行
 
-1. **听不到声音**
-   - 检查麦克风/扬声器是否被系统占用
-   - 检查防火墙是否放行服务端端口
+### 有啸叫或回声
 
-2. **有啸叫/回声**
-   - 建议佩戴耳机
+- 建议佩戴耳机
 
-3. **断断续续**
-   - 局域网拥塞时会丢帧；可优先使用有线网络
+### 语音断断续续
 
-## 10. 开源发布到 GitHub
+- 尽量使用稳定局域网（优先有线）
+- 避免 Wi-Fi 高拥塞环境
 
-本项目已按开源仓库方式整理：
-- 使用 MIT 许可证（见 `LICENSE`）
-- 根目录 `.gitignore` 已忽略虚拟环境、打包产物、Android 构建目录与本地配置
+## 开发建议
 
-首次发布建议流程：
+- 先用两台设备做基本连通性验证（同房间双向通话）
+- 再逐步加特性：鉴权、加密、AEC、统计指标、重连机制
 
-1. 在 GitHub 网页新建空仓库（不要勾选 README / .gitignore / LICENSE）。
-2. 在本地项目目录执行：
+## 许可证
 
-```bash
-git init
-git add .
-git commit -m "chore: initial open-source release"
-git branch -M main
-git remote add origin <你的仓库地址>
-git push -u origin main
-```
+本项目采用 MIT 许可证，详见 [LICENSE](LICENSE)。
 
-示例仓库地址：
-- HTTPS：`https://github.com/<username>/lan-voice-chat.git`
-- SSH：`git@github.com:<username>/lan-voice-chat.git`
 
