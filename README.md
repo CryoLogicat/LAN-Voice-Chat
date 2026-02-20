@@ -145,6 +145,10 @@ python windows_app.py
 - 尽量使用稳定局域网（优先有线）
 - 避免 Wi-Fi 高拥塞环境
 
+### 不在同一局域网
+
+- 可考虑使用[FRP技术](https://github.com/fatedier/frp)
+
 ## 开发建议
 
 - 先用两台设备做基本连通性验证（同房间双向通话）
@@ -153,5 +157,6 @@ python windows_app.py
 ## 许可证
 
 本项目采用 MIT 许可证，详见 [LICENSE](LICENSE)。
+
 
 
